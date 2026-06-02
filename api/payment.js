@@ -122,16 +122,20 @@ try {
     raw_response: result.body
   });
 }
+
+if (result.status !== 200) {
+  console.log("DOKU ERROR:", result.status, JSON.stringify(data));
+
+  return res.status(500).json({
+    success: false,
+    doku_status: result.status,
+    doku_response: data
+  });
 }
 
-    if (result.status !== 200) {
-      console.log("DOKU ERROR:", result.status, JSON.stringify(data));
-      return res.status(500).json({ success: false, message: JSON.stringify(data) });
-    }
-
 console.log("DOKU RESPONSE:", JSON.stringify(data));
-    
-   return res.status(200).json({
+
+return res.status(200).json({
   success: true,
   invoice_number: request_id,
   doku_response: data
