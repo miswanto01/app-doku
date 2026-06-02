@@ -102,9 +102,10 @@ module.exports = async (req, res) => {
       reqDoku.end();
     });
 
-    const data = JSON.parse(result.body);
+const data = JSON.parse(result.body);
 
     if (result.status !== 200) {
+      console.log("DOKU ERROR:", result.status, JSON.stringify(data));
       return res.status(500).json({ success: false, message: JSON.stringify(data) });
     }
 
