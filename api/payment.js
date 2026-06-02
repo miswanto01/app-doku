@@ -8,13 +8,40 @@ export default async function handler(req, res) {
   }
 
  if (req.method === "POST") {
-  return res.status(200).json({
-    success: true,
-    env_check: {
-      client_id_exists: !!process.env.DOKU_CLIENT_ID,
-      secret_exists: !!process.env.DOKU_SECRET_KEY
-    }
-  });
+if (req.method === "POST") {
+  const https = require("https");
+
+  try {
+    const result = await new Promise((resolve, reject) => {
+      const reqDoku = https.request(
+        {
+          hostname: "api.doku.com",
+          path: "/",
+          method: "GET"
+        },
+        (resDoku) => {
+          resolve({
+            status: resDoku.statusCode
+          });
+        }
+      );
+
+      reqDoku.on("error", reject);
+      reqDoku.end();
+    });
+
+    return res.status(200).json({
+      success: true,
+      doku_status: result.status
+    });
+
+  } catch (err) {
+    return res.status(500).json({
+      success: false,
+      error: err.message
+    });
+  }
+}
 }
 
   console.log("BODY DITERIMA:", req.body);
