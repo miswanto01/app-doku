@@ -32,11 +32,6 @@ module.exports = async (req, res) => {
     return res.status(200).end();
   }
 
-  return res.status(200).json({
-    status: "OK",
-    time: Date.now()
-  });
-
   if (req.method === "OPTIONS") {
     return res.status(200).end();
   }
@@ -115,12 +110,6 @@ module.exports = async (req, res) => {
 
 console.log("DOKU STATUS:", result.status);
 console.log("DOKU RAW:", result.body);
-
-let data;
-
-try {
-  console.log("DOKU STATUS:", result.status);
-console.log("DOKU RAW RESPONSE:", result.body);
 
 let data;
 
