@@ -119,13 +119,20 @@ console.log("DOKU RAW:", result.body);
 let data;
 
 try {
+  console.log("DOKU STATUS:", result.status);
+console.log("DOKU RAW RESPONSE:", result.body);
+
+let data;
+
+try {
   data = JSON.parse(result.body);
-} catch (e) {
+} catch (err) {
   return res.status(500).json({
     success: false,
     parse_error: true,
     raw_response: result.body
   });
+}
 }
 
     if (result.status !== 200) {
@@ -135,11 +142,11 @@ try {
 
 console.log("DOKU RESPONSE:", JSON.stringify(data));
     
-    return res.status(200).json({
-      success:        true,
-      payment_url:    data.response.payment.url,
-      invoice_number: request_id,
-    });
+   return res.status(200).json({
+  success: true,
+  invoice_number: request_id,
+  doku_response: data
+});
 
   } catch (err) {
     return res.status(500).json({ success: false, message: err.message });
