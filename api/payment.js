@@ -7,12 +7,15 @@ export default async function handler(req, res) {
     return res.status(200).end();
   }
 
-  if (req.method !== "POST") {
-    return res.status(200).json({
-      success: true,
-      message: "API hidup"
-    });
-  }
+ if (req.method === "POST") {
+  return res.status(200).json({
+    success: true,
+    env_check: {
+      client_id_exists: !!process.env.DOKU_CLIENT_ID,
+      secret_exists: !!process.env.DOKU_SECRET_KEY
+    }
+  });
+}
 
   console.log("BODY DITERIMA:", req.body);
 
