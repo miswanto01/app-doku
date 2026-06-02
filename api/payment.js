@@ -61,7 +61,8 @@ module.exports = async (req, res) => {
       },
       payment: {
         payment_due_date:     60,
-        payment_method_types: ["QRIS"],
+        payment_method_types: ["VIRTUAL_ACCOUNT_BNI",
+          "VIRTUAL_ACCOUNT_BANK_PERMATA"],
       },
       customer: {
         id:      customerId || "GUEST-01",
@@ -119,3 +120,4 @@ const data = JSON.parse(result.body);
     return res.status(500).json({ success: false, message: err.message });
   }
 };
+ 
