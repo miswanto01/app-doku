@@ -1,8 +1,7 @@
 const crypto = require("crypto");
 const { v4: uuidv4 } = require("uuid");
-const fetch = require("node-fetch");
 
-const CLIENT_ID = process.env.DOKU_CLIENT_ID;
+const CLIENT_ID  = process.env.DOKU_CLIENT_ID;
 const SECRET_KEY = process.env.DOKU_SECRET_KEY;
 
 function getCurrentTimestamp() {
@@ -13,74 +12,109 @@ function generateDigest(body) {
   return Buffer.from(hash).toString("base64");
 }
 function generateSignature(clientId, requestId, target, digest, secret, timestamp) {
-  let c = `Client-Id:${clientId}\n`;
-  c += `Request-Id:${requestId}\n`;
-  c += `Request-Timestamp:${timestamp}\n`;
-  c += `Request-Target:${target}`;
+  let c  = `Client-Id:${clientId}\n`;
+      c += `Request-Id:${requestId}\n`;
+      c += `Request-Timestamp:${timestamp}\n`;
+      c += `Request-Target:${target}`;
   if (digest) c += `\nDigest:${digest}`;
   const hmac = crypto.createHmac("sha256", secret).update(c).digest();
   return "HMACSHA256=" + Buffer.from(hmac).toString("base64");
 }
 
 module.exports = async (req, res) => {
+  // CORS — wajib ada di setiap response termasuk error
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type");
-  if (req.method === "OPTIONS") return res.status(200).end();
+
+  if (req.method === "OPTIONS") {
+    return res.status(200).end();
+  }
+
+  if (req.method !== "POST") {
+    return res.status(405).json({ success: false, message: "Method not allowed" });
+  }
+
+  // Cek env variable
+  if (!CLIENT_ID || !SECRET_KEY) {
+    return res.status(500).json({ success: false, message: "ENV variable belum diset di Vercel" });
+  }
 
   try {
     const { amount, customerName, customerPhone, customerId } = req.body;
-    const request_id = uuidv4();
-    const timestamp = getCurrentTimestamp();
-    const url = "/checkout/v1/payment";
 
-    const body = JSON.stringify({
+    if (!amount || !customerName || !customerPhone) {
+      return res.status(400).json({ success: false, message: "Data tidak lengkap" });
+    }
+
+    const request_id = uuidv4();
+    const timestamp  = getCurrentTimestamp();
+    const urlPath    = "/checkout/v1/payment";
+
+    const bodyStr = JSON.stringify({
       order: {
-        amount,
-        invoice_number: request_id,
-        currency: "IDR",
-        callback_url: "https://creatonomy.blogspot.com",
+        amount:              Number(amount),
+        invoice_number:      request_id,
+        currency:            "IDR",
+        callback_url:        "https://creatonomy.blogspot.com",
         callback_url_cancel: "https://creatonomy.blogspot.com",
       },
       payment: {
-        payment_due_date: 60,
+        payment_due_date:     60,
         payment_method_types: ["QRIS"],
       },
       customer: {
-        id: customerId || "GUEST-01",
-        name: customerName,
-        phone: customerPhone,
+        id:      customerId || "GUEST-01",
+        name:    customerName,
+        phone:   customerPhone,
         country: "ID",
       },
     });
 
-    const digest = generateDigest(body);
-    const signature = generateSignature(CLIENT_ID, request_id, url, digest, SECRET_KEY, timestamp);
+    const digest    = generateDigest(bodyStr);
+    const signature = generateSignature(CLIENT_ID, request_id, urlPath, digest, SECRET_KEY, timestamp);
 
-    const response = await fetch("https://api.doku.com" + url, {
-      method: "POST",
-      headers: {
-        "Client-Id": CLIENT_ID,
-        "Request-Id": request_id,
-        "Request-Timestamp": timestamp,
-        "Signature": signature,
-        "Content-Type": "application/json",
-      },
-      body,
+    // Gunakan https bawaan Node.js — tanpa node-fetch
+    const result = await new Promise((resolve, reject) => {
+      const https = require("https");
+      const options = {
+        hostname: "api.doku.com",
+        path:     urlPath,
+        method:   "POST",
+        headers: {
+          "Client-Id":         CLIENT_ID,
+          "Request-Id":        request_id,
+          "Request-Timestamp": timestamp,
+          "Signature":         signature,
+          "Content-Type":      "application/json",
+          "Content-Length":    Buffer.byteLength(bodyStr),
+        },
+      };
+
+      const reqDoku = https.request(options, (resDoku) => {
+        let data = "";
+        resDoku.on("data", chunk => data += chunk);
+        resDoku.on("end", () => resolve({ status: resDoku.statusCode, body: data }));
+      });
+
+      reqDoku.on("error", reject);
+      reqDoku.write(bodyStr);
+      reqDoku.end();
     });
 
-    const data = await response.json();
+    const data = JSON.parse(result.body);
 
-    if (!response.ok) {
+    if (result.status !== 200) {
       return res.status(500).json({ success: false, message: JSON.stringify(data) });
     }
 
-    res.json({
-      success: true,
-      payment_url: data.response.payment.url,
+    return res.status(200).json({
+      success:        true,
+      payment_url:    data.response.payment.url,
       invoice_number: request_id,
     });
+
   } catch (err) {
-    res.status(500).json({ success: false, message: err.message });
+    return res.status(500).json({ success: false, message: err.message });
   }
 };
