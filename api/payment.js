@@ -53,14 +53,19 @@ module.exports = async (req, res) => {
   }
 
   if (req.method !== "POST") {
+    console.log("POST MASUK");
+console.log("BODY:", req.body);
     return res.status(405).json({
       success: false,
       message: "Method not allowed",
     });
   }
 
+
+  
   try {
-    // ======================
+
+    console.log("TRY DIMULAI");// ======================
     // ENV CHECK
     // ======================
     if (!CLIENT_ID || !SECRET_KEY) {
@@ -124,6 +129,7 @@ module.exports = async (req, res) => {
       timestamp
     );
 
+    console.log("SEBELUM REQUEST DOKU");
     // ======================
     // REQUEST KE DOKU
     // ======================
