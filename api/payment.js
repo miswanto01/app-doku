@@ -5,6 +5,7 @@ const { v4: uuidv4 } = require("uuid");
 const CLIENT_ID  = process.env.DOKU_CLIENT_ID;
 const SECRET_KEY = process.env.DOKU_SECRET_KEY;
 
+
 function getCurrentTimestamp() {
   return new Date().toISOString().slice(0, 19) + "Z";
 }
