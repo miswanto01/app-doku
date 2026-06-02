@@ -1,6 +1,10 @@
 {
   "version": 2,
+  "functions": {
+    "api/payment.js": { "memory": 128, "maxDuration": 10 }
+  },
   "routes": [
-    { "src": "/api/(.*)", "dest": "/api/$1" }
+    { "src": "/api/payment", "dest": "/api/payment" },
+    { "src": "/(.*)", "dest": "/index.js" }
   ]
 }
